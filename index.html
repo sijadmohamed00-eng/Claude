@@ -4,423 +4,173 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>مساعدي الذكي</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'IBM Plex Sans Arabic',sans-serif;background:#07050f;color:#f1f5f9;height:100vh;overflow:hidden}
-
-  /* ——— Layout ——— */
-  #app{display:flex;height:100vh;position:relative;overflow:hidden}
-
-  /* ——— Sidebar ——— */
-  #sidebar{
-    width:260px;flex-shrink:0;
-    background:rgba(10,8,28,0.97);
-    border-left:1px solid rgba(99,102,241,0.15);
-    display:flex;flex-direction:column;padding:20px 14px;gap:10px;
-    z-index:10;
-  }
-  .logo{
-    display:flex;align-items:center;gap:10px;padding:10px 6px 18px;
-    border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:4px;
-  }
-  .logo-icon{
-    width:38px;height:38px;border-radius:50%;flex-shrink:0;
-    background:linear-gradient(135deg,#6366f1,#a855f7);
-    display:flex;align-items:center;justify-content:center;
-    font-size:17px;box-shadow:0 0 16px rgba(99,102,241,0.4);
-  }
-  .logo-text{font-weight:700;font-size:15px;color:#f1f5f9}
-  .logo-sub{font-size:10px;color:#4ade80;display:flex;align-items:center;gap:4px;margin-top:2px}
-  .dot{width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block}
-
-  .nav-btn{
-    display:flex;align-items:center;gap:10px;
-    padding:11px 14px;border-radius:12px;border:none;
-    background:transparent;color:#94a3b8;
-    cursor:pointer;font-family:inherit;font-size:13.5px;
-    transition:all 0.2s;text-align:right;width:100%;
-  }
-  .nav-btn:hover{background:rgba(255,255,255,0.05);color:#e2e8f0}
-  .nav-btn.active{background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.25)}
-  .nav-icon{font-size:17px;flex-shrink:0}
-
-  .sidebar-footer{
-    margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);
-    font-size:11px;color:rgba(148,163,184,0.4);text-align:center;line-height:1.6;
-  }
-
-  /* ——— Main area ——— */
-  #main{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden}
-
-  /* ——— BG orbs ——— */
-  .orb{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;z-index:0}
-
-  /* ——— Chat panel ——— */
-  #chat-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1}
-  #chat-panel.hidden{display:none}
-
-  #messages{flex:1;overflow-y:auto;padding:22px 20px 10px;display:flex;flex-direction:column;gap:0}
-  #messages::-webkit-scrollbar{width:3px}
-  #messages::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.3);border-radius:2px}
-
-  .msg-wrap{display:flex;margin-bottom:18px;gap:10px;align-items:flex-start;animation:fadeSlide 0.3s ease}
-  .msg-wrap.user{flex-direction:row-reverse}
-
-  .avatar{
-    width:34px;height:34px;border-radius:50%;flex-shrink:0;margin-top:2px;
-    display:flex;align-items:center;justify-content:center;font-size:14px;
-  }
-  .avatar.ai{background:linear-gradient(135deg,#6366f1,#a855f7);box-shadow:0 2px 8px rgba(99,102,241,0.4)}
-  .avatar.user{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1)}
-
-  .bubble{
-    max-width:72%;padding:12px 16px;font-size:14.5px;line-height:1.75;
-    white-space:pre-wrap;word-break:break-word;
-  }
-  .bubble.ai{
-    background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);
-    border-radius:4px 18px 18px 18px;box-shadow:0 2px 10px rgba(0,0,0,0.2);
-  }
-  .bubble.user{
-    background:linear-gradient(135deg,#6366f1,#7c3aed);
-    border-radius:18px 4px 18px 18px;box-shadow:0 4px 15px rgba(99,102,241,0.3);
-  }
-  .msg-files{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;justify-content:flex-end}
-  .msg-files img{max-width:180px;max-height:130px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);object-fit:cover}
-
-  .typing-dots{display:flex;gap:5px;align-items:center;padding:4px 0}
-  .typing-dots span{
-    width:8px;height:8px;border-radius:50%;background:#818cf8;
-    animation:bounce 1.2s infinite;
-  }
-  .typing-dots span:nth-child(2){animation-delay:0.2s}
-  .typing-dots span:nth-child(3){animation-delay:0.4s}
-
-  /* ——— Input bar ——— */
-  #input-area{
-    padding:12px 18px 14px;
-    border-top:1px solid rgba(255,255,255,0.05);
-    background:rgba(0,0,0,0.25);z-index:2;
-  }
-  #pending-files{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;direction:rtl}
-  #pending-files:empty{display:none}
-
-  .fchip{
-    display:inline-flex;align-items:center;gap:6px;
-    background:rgba(99,102,241,0.14);border:1px solid rgba(99,102,241,0.28);
-    border-radius:8px;padding:4px 10px;font-size:12px;color:#c7d2fe;max-width:180px;
-  }
-  .fchip span.name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .fchip button{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:15px;line-height:1;padding:0}
-
-  .img-thumb-wrap{position:relative;display:inline-block}
-  .img-thumb-wrap img{height:58px;border-radius:8px;border:1px solid rgba(99,102,241,0.3);object-fit:cover}
-  .img-thumb-wrap .rm{
-    position:absolute;top:-7px;right:-7px;width:18px;height:18px;
-    border-radius:50%;background:#ef4444;border:none;color:#fff;
-    cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;
-  }
-
-  #input-row{
-    display:flex;gap:8px;align-items:flex-end;
-    background:rgba(255,255,255,0.04);border:1px solid rgba(99,102,241,0.22);
-    border-radius:16px;padding:8px;transition:border-color 0.2s;
-  }
-  #input-row:focus-within{border-color:rgba(99,102,241,0.55)}
-
-  #msg-input{
-    flex:1;background:transparent;border:none;color:#f1f5f9;
-    font-size:14.5px;font-family:inherit;resize:none;line-height:1.65;
-    max-height:120px;direction:rtl;text-align:right;padding-top:5px;
-    outline:none;
-  }
-  #msg-input::placeholder{color:rgba(148,163,184,0.45)}
-
-  .icon-btn{
-    width:37px;height:37px;border-radius:10px;border:1px solid rgba(99,102,241,0.2);
-    background:rgba(99,102,241,0.08);color:#818cf8;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;
-    font-size:18px;flex-shrink:0;transition:all 0.2s;
-  }
-  .icon-btn:hover{background:rgba(99,102,241,0.2);border-color:rgba(99,102,241,0.45)}
-
-  #send-btn{
-    width:37px;height:37px;border-radius:10px;border:none;flex-shrink:0;
-    background:rgba(99,102,241,0.12);color:#fff;
-    cursor:not-allowed;display:flex;align-items:center;justify-content:center;
-    font-size:17px;transition:all 0.2s;
-  }
-  #send-btn.active{
-    background:linear-gradient(135deg,#6366f1,#7c3aed);cursor:pointer;
-    box-shadow:0 4px 12px rgba(99,102,241,0.35);
-  }
-  #send-btn.active:hover{transform:scale(1.05)}
-
-  #input-hint{text-align:center;color:rgba(148,163,184,0.28);font-size:10.5px;margin-top:6px}
-
-  /* ——— Error bar ——— */
-  #error-bar{
-    display:none;padding:9px 16px;
-    background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.22);
-    border-radius:10px;color:#fca5a5;font-size:13px;margin:0 18px 10px;
-    direction:rtl;text-align:right;
-  }
-  #error-bar.show{display:block}
-
-  /* ——— File Editor Panel ——— */
-  #editor-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1}
-  #editor-panel.hidden{display:none}
-
-  .panel-header{
-    padding:16px 22px;border-bottom:1px solid rgba(255,255,255,0.05);
-    background:rgba(99,102,241,0.04);
-    display:flex;align-items:center;justify-content:space-between;gap:12px;
-  }
-  .panel-title{font-size:15px;font-weight:600;color:#f1f5f9}
-  .panel-sub{font-size:11px;color:#64748b;margin-top:2px}
-
-  #editor-body{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:20px}
-  #drop-zone{
-    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
-    border:2px dashed rgba(99,102,241,0.25);border-radius:16px;
-    background:rgba(99,102,241,0.03);cursor:pointer;transition:all 0.2s;
-    padding:30px;text-align:center;
-  }
-  #drop-zone:hover,#drop-zone.drag{border-color:rgba(99,102,241,0.5);background:rgba(99,102,241,0.07)}
-  #drop-zone .dz-icon{font-size:44px;opacity:0.6}
-  #drop-zone .dz-title{font-size:15px;color:#e2e8f0;font-weight:500}
-  #drop-zone .dz-sub{font-size:12px;color:#64748b;line-height:1.6}
-
-  #editor-loaded{flex:1;display:flex;flex-direction:column;gap:14px;overflow:hidden}
-  #editor-loaded.hidden{display:none}
-  #drop-zone.hidden{display:none}
-
-  .file-info-bar{
-    display:flex;align-items:center;gap:10px;padding:10px 14px;
-    background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);
-    border-radius:10px;
-  }
-  .file-info-bar .fi-icon{font-size:20px}
-  .file-info-bar .fi-name{font-size:13px;font-weight:500;color:#c7d2fe;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .file-info-bar .fi-size{font-size:11px;color:#64748b}
-  .change-file-btn{
-    padding:5px 12px;border-radius:7px;border:1px solid rgba(99,102,241,0.25);
-    background:transparent;color:#818cf8;cursor:pointer;font-size:12px;font-family:inherit;
-    transition:all 0.2s;flex-shrink:0;
-  }
-  .change-file-btn:hover{background:rgba(99,102,241,0.15)}
-
-  #img-preview-wrap{
-    flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;
-    border-radius:12px;border:1px solid rgba(255,255,255,0.07);background:rgba(0,0,0,0.2);
-    padding:12px;
-  }
-  #img-preview{max-width:100%;max-height:100%;border-radius:8px;object-fit:contain}
-  #img-preview-wrap.hidden{display:none}
-
-  #text-editor-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
-  #text-editor-wrap.hidden{display:none}
-  #text-editor{
-    flex:1;width:100%;min-height:0;
-    background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.07);
-    border-radius:12px;color:#e2e8f0;font-family:'Courier New',monospace;
-    font-size:13px;line-height:1.7;padding:14px;resize:none;
-    direction:ltr;text-align:left;outline:none;overflow-y:auto;
-  }
-  #text-editor::-webkit-scrollbar{width:3px}
-  #text-editor::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.3);border-radius:2px}
-
-  /* ——— Edit instruction bar ——— */
-  #edit-bar{
-    display:flex;gap:8px;align-items:center;
-    background:rgba(255,255,255,0.04);border:1px solid rgba(99,102,241,0.22);
-    border-radius:12px;padding:8px 10px;
-  }
-  #edit-bar:focus-within{border-color:rgba(99,102,241,0.5)}
-  #edit-input{
-    flex:1;background:transparent;border:none;color:#f1f5f9;
-    font-size:14px;font-family:inherit;outline:none;
-    direction:rtl;text-align:right;padding:2px 4px;
-  }
-  #edit-input::placeholder{color:rgba(148,163,184,0.4)}
-  #edit-send-btn{
-    padding:7px 16px;border-radius:9px;border:none;
-    background:linear-gradient(135deg,#6366f1,#7c3aed);
-    color:#fff;cursor:pointer;font-size:13px;font-family:inherit;
-    font-weight:500;transition:all 0.2s;white-space:nowrap;
-  }
-  #edit-send-btn:hover{transform:scale(1.03);box-shadow:0 3px 10px rgba(99,102,241,0.4)}
-  #edit-send-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none}
-
-  #download-bar{
-    display:flex;gap:8px;align-items:center;justify-content:flex-end;
-  }
-  #download-btn{
-    display:flex;align-items:center;gap:7px;
-    padding:8px 18px;border-radius:10px;border:none;
-    background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.25);
-    color:#4ade80;cursor:pointer;font-size:13px;font-family:inherit;
-    font-weight:500;transition:all 0.2s;
-  }
-  #download-btn:hover{background:rgba(74,222,128,0.2);box-shadow:0 3px 10px rgba(74,222,128,0.15)}
-  #download-btn.hidden{display:none}
-  #edit-status{font-size:12px;color:#64748b;flex:1;direction:rtl;text-align:right}
-
-  /* ——— Edit overlay loading ——— */
-  #edit-overlay{
-    display:none;position:absolute;inset:0;z-index:20;
-    background:rgba(7,5,15,0.75);backdrop-filter:blur(4px);
-    align-items:center;justify-content:center;flex-direction:column;gap:14px;
-  }
-  #edit-overlay.show{display:flex}
-  .spinner{
-    width:44px;height:44px;border-radius:50%;
-    border:3px solid rgba(99,102,241,0.2);
-    border-top-color:#6366f1;
-    animation:spin 0.8s linear infinite;
-  }
-  .overlay-text{font-size:13px;color:#94a3b8}
-
-  /* ——— Animations ——— */
-  @keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-7px)}}
-  @keyframes spin{to{transform:rotate(360deg)}}
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'IBM Plex Sans Arabic',sans-serif;background:#07050f;color:#f1f5f9;overflow:hidden}
+#app{display:flex;height:100vh}
+#sidebar{width:220px;flex-shrink:0;background:rgba(10,8,28,0.98);border-left:1px solid rgba(99,102,241,0.13);display:flex;flex-direction:column;padding:16px 12px;gap:8px}
+.logo{display:flex;align-items:center;gap:9px;padding:8px 4px 16px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:4px}
+.logo-ic{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 14px rgba(99,102,241,0.4)}
+.logo-t{font-weight:700;font-size:14px}.logo-s{font-size:10px;color:#4ade80;display:flex;align-items:center;gap:3px;margin-top:1px}
+.dot{width:5px;height:5px;border-radius:50%;background:#4ade80}
+.nb{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:10px;border:none;background:transparent;color:#64748b;cursor:pointer;font-family:inherit;font-size:13px;transition:all .2s;text-align:right;width:100%}
+.nb:hover{background:rgba(255,255,255,0.05);color:#e2e8f0}
+.nb.active{background:rgba(99,102,241,0.14);color:#a5b4fc;border:1px solid rgba(99,102,241,0.22)}
+.nb-ic{font-size:16px;flex-shrink:0}
+.sf{margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);font-size:10.5px;color:rgba(148,163,184,0.35);text-align:center;line-height:1.7}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.orb{position:absolute;border-radius:50%;filter:blur(65px);pointer-events:none;z-index:0}
+.panel{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1}
+.panel.hidden{display:none}
+#msgs{flex:1;overflow-y:auto;padding:20px 18px 8px;display:flex;flex-direction:column}
+#msgs::-webkit-scrollbar{width:3px}
+#msgs::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.3);border-radius:2px}
+.mw{display:flex;margin-bottom:16px;gap:9px;align-items:flex-start;animation:fs .3s ease}
+.mw.u{flex-direction:row-reverse}
+.av{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+.av.ai{background:linear-gradient(135deg,#6366f1,#a855f7);box-shadow:0 2px 8px rgba(99,102,241,0.4)}
+.av.us{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1)}
+.bbl{max-width:74%;padding:11px 15px;font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+.bbl.ai{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.09);border-radius:4px 16px 16px 16px}
+.bbl.us{background:linear-gradient(135deg,#6366f1,#7c3aed);border-radius:16px 4px 16px 16px;box-shadow:0 4px 14px rgba(99,102,241,0.28)}
+.mfiles{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;justify-content:flex-end}
+.mfiles img{max-width:160px;max-height:120px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);object-fit:cover}
+.fchip{display:inline-flex;align-items:center;gap:5px;background:rgba(99,102,241,0.14);border:1px solid rgba(99,102,241,0.26);border-radius:7px;padding:3px 9px;font-size:11px;color:#c7d2fe;max-width:160px}
+.fchip .fn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fchip button{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:13px;line-height:1;padding:0}
+.tdots{display:flex;gap:4px;align-items:center;padding:3px 0}
+.tdots span{width:7px;height:7px;border-radius:50%;background:#818cf8;animation:bn 1.2s infinite}
+.tdots span:nth-child(2){animation-delay:.2s}.tdots span:nth-child(3){animation-delay:.4s}
+#ia{padding:10px 16px 13px;border-top:1px solid rgba(255,255,255,0.05);background:rgba(0,0,0,0.22);z-index:2}
+#pf{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px;direction:rtl}
+#pf:empty{display:none}
+.ithw{position:relative;display:inline-block}
+.ithw img{height:52px;border-radius:7px;border:1px solid rgba(99,102,241,0.28);object-fit:cover}
+.ithw .rm{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:#ef4444;border:none;color:#fff;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
+#ir{display:flex;gap:7px;align-items:flex-end;background:rgba(255,255,255,0.04);border:1px solid rgba(99,102,241,0.2);border-radius:14px;padding:7px;transition:border-color .2s}
+#ir:focus-within{border-color:rgba(99,102,241,0.52)}
+#mi{flex:1;background:transparent;border:none;color:#f1f5f9;font-size:14px;font-family:inherit;resize:none;line-height:1.6;max-height:110px;direction:rtl;text-align:right;padding-top:4px;outline:none}
+#mi::placeholder{color:rgba(148,163,184,0.4)}
+.icb{width:35px;height:35px;border-radius:9px;border:1px solid rgba(99,102,241,0.18);background:rgba(99,102,241,0.08);color:#818cf8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;transition:all .2s}
+.icb:hover{background:rgba(99,102,241,0.2);border-color:rgba(99,102,241,0.42)}
+#sb{width:35px;height:35px;border-radius:9px;border:none;flex-shrink:0;background:rgba(99,102,241,0.1);color:#fff;cursor:not-allowed;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s}
+#sb.on{background:linear-gradient(135deg,#6366f1,#7c3aed);cursor:pointer;box-shadow:0 3px 10px rgba(99,102,241,0.32)}
+#sb.on:hover{transform:scale(1.05)}
+#ih{text-align:center;color:rgba(148,163,184,0.25);font-size:10px;margin-top:5px}
+#eb{display:none;padding:8px 14px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:9px;color:#fca5a5;font-size:12px;margin:0 16px 8px;direction:rtl}
+#eb.show{display:block}
+.ph{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.05);background:rgba(99,102,241,0.04);display:flex;align-items:center;justify-content:space-between}
+.pt{font-size:14px;font-weight:600;color:#f1f5f9}.ps{font-size:11px;color:#475569;margin-top:1px}
+#eb2{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:16px;gap:12px}
+#dz{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed rgba(99,102,241,0.22);border-radius:14px;background:rgba(99,102,241,0.03);cursor:pointer;transition:all .2s;padding:28px;text-align:center}
+#dz:hover,#dz.drag{border-color:rgba(99,102,241,0.48);background:rgba(99,102,241,0.07)}
+#dz .di{font-size:40px;opacity:.55}
+#dz .dt{font-size:14px;color:#e2e8f0;font-weight:500}
+#dz .ds{font-size:11.5px;color:#475569;line-height:1.6}
+#el{flex:1;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+#el.hidden,#dz.hidden{display:none}
+.fib{display:flex;align-items:center;gap:9px;padding:9px 13px;background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.18);border-radius:9px}
+.fib .fi2{font-size:18px}.fib .fn2{font-size:12.5px;font-weight:500;color:#c7d2fe;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fib .fs2{font-size:10px;color:#475569}
+.cfb{padding:4px 11px;border-radius:6px;border:1px solid rgba(99,102,241,0.22);background:transparent;color:#818cf8;cursor:pointer;font-size:11.5px;font-family:inherit;transition:all .2s;flex-shrink:0}
+.cfb:hover{background:rgba(99,102,241,0.14)}
+#ipw{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.18);padding:10px}
+#ipw.hidden{display:none}
+#ip{max-width:100%;max-height:100%;border-radius:7px;object-fit:contain}
+#tew{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+#tew.hidden{display:none}
+#te{flex:1;width:100%;min-height:0;background:rgba(0,0,0,0.28);border:1px solid rgba(255,255,255,0.06);border-radius:10px;color:#e2e8f0;font-family:'Courier New',monospace;font-size:12.5px;line-height:1.7;padding:12px;resize:none;direction:ltr;text-align:left;outline:none;overflow-y:auto}
+#te::-webkit-scrollbar{width:3px}
+#te::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.28);border-radius:2px}
+#ebar{display:flex;gap:7px;align-items:center;background:rgba(255,255,255,0.04);border:1px solid rgba(99,102,241,0.2);border-radius:11px;padding:7px 10px}
+#ebar:focus-within{border-color:rgba(99,102,241,0.48)}
+#ei{flex:1;background:transparent;border:none;color:#f1f5f9;font-size:13.5px;font-family:inherit;outline:none;direction:rtl;text-align:right;padding:2px 3px}
+#ei::placeholder{color:rgba(148,163,184,0.38)}
+#esb{padding:6px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;cursor:pointer;font-size:12.5px;font-family:inherit;font-weight:500;transition:all .2s;white-space:nowrap}
+#esb:hover{transform:scale(1.03);box-shadow:0 3px 9px rgba(99,102,241,0.38)}
+#esb:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+#dbar{display:flex;align-items:center;gap:8px}
+#dbtx{font-size:11.5px;color:#475569;flex:1;direction:rtl;text-align:right}
+#dlb{display:flex;align-items:center;gap:6px;padding:7px 15px;border-radius:9px;border:1px solid rgba(74,222,128,0.22);background:rgba(74,222,128,0.08);color:#4ade80;cursor:pointer;font-size:12.5px;font-family:inherit;font-weight:500;transition:all .2s}
+#dlb:hover{background:rgba(74,222,128,0.16)}
+#dlb.hidden{display:none}
+#ov{display:none;position:absolute;inset:0;z-index:20;background:rgba(7,5,15,0.78);backdrop-filter:blur(5px);align-items:center;justify-content:center;flex-direction:column;gap:13px}
+#ov.show{display:flex}
+.sp{width:42px;height:42px;border-radius:50%;border:3px solid rgba(99,102,241,0.18);border-top-color:#6366f1;animation:spin .8s linear infinite}
+.ot{font-size:12.5px;color:#94a3b8}
+@keyframes fs{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bn{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-7px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div id="app">
-
-  <!-- Sidebar -->
   <div id="sidebar">
     <div class="logo">
-      <div class="logo-icon">✦</div>
-      <div>
-        <div class="logo-text">مساعدي الذكي</div>
-        <div class="logo-sub"><span class="dot"></span> Claude Sonnet</div>
-      </div>
+      <div class="logo-ic">✦</div>
+      <div><div class="logo-t">مساعدي الذكي</div><div class="logo-s"><span class="dot"></span>Claude Sonnet</div></div>
     </div>
-
-    <button class="nav-btn active" id="nav-chat" onclick="switchTab('chat')">
-      <span class="nav-icon">💬</span> المحادثة
-    </button>
-    <button class="nav-btn" id="nav-editor" onclick="switchTab('editor')">
-      <span class="nav-icon">✏️</span> تعديل ملف
-    </button>
-
-    <div style="margin-top:6px;padding:10px 6px">
-      <button onclick="newChat()" style="
-        width:100%;padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);
-        background:rgba(255,255,255,0.04);color:#64748b;cursor:pointer;
-        font-family:inherit;font-size:12.5px;transition:all 0.2s;
-      " onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">
-        🔄 محادثة جديدة
-      </button>
+    <button class="nb active" id="n1" onclick="sw('chat')"><span class="nb-ic">💬</span>المحادثة</button>
+    <button class="nb" id="n2" onclick="sw('editor')"><span class="nb-ic">✏️</span>تعديل ملف</button>
+    <div style="margin-top:6px">
+      <button onclick="newChat()" style="width:100%;padding:8px;border-radius:9px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);color:#475569;cursor:pointer;font-family:inherit;font-size:12px;transition:all .2s" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#475569'">🔄 محادثة جديدة</button>
     </div>
-
-    <div class="sidebar-footer">
-      يدعم: صور • PDF • نصوص • كود • CSV<br/>
-      مجاني 100% • بلا حدود
-    </div>
+    <div class="sf">صور • PDF • نصوص • كود<br/>مجاني 100% • بلا حدود</div>
+    <button onclick="showKeySettings()" style="width:100%;padding:7px;border-radius:8px;border:1px solid rgba(99,102,241,0.2);background:transparent;color:#475569;cursor:pointer;font-family:inherit;font-size:11px;margin-top:6px;transition:all .2s" onmouseover="this.style.color='#818cf8'" onmouseout="this.style.color='#475569'">🔑 تغيير المفتاح</button>
   </div>
-
-  <!-- Main -->
   <div id="main">
-    <!-- BG orbs -->
-    <div class="orb" style="width:320px;height:320px;top:5%;left:5%;background:rgba(99,102,241,0.07)"></div>
-    <div class="orb" style="width:260px;height:260px;top:55%;right:8%;background:rgba(168,85,247,0.06)"></div>
-    <div class="orb" style="width:200px;height:200px;bottom:8%;left:30%;background:rgba(59,130,246,0.05)"></div>
+    <div class="orb" style="width:300px;height:300px;top:5%;left:5%;background:rgba(99,102,241,0.07)"></div>
+    <div class="orb" style="width:240px;height:240px;top:55%;right:8%;background:rgba(168,85,247,0.06)"></div>
+    <div class="orb" style="width:190px;height:190px;bottom:8%;left:28%;background:rgba(59,130,246,0.05)"></div>
 
-    <!-- Edit overlay -->
-    <div id="edit-overlay">
-      <div class="spinner"></div>
-      <div class="overlay-text">جاري التعديل...</div>
-    </div>
-
-    <!-- ═══ CHAT PANEL ═══ -->
-    <div id="chat-panel">
-      <div id="messages">
-        <div class="msg-wrap">
-          <div class="avatar ai">✦</div>
-          <div class="bubble ai">مرحباً! أنا مساعدك الذكي ✦
-أتحدث بأي لغة، وأقدر أساعدك في أي شيء.
-يمكنك أيضاً فتح تبويب «تعديل ملف» لرفع أي ملف وتعديله!</div>
-        </div>
+    <!-- CHAT -->
+    <div class="panel" id="cp">
+      <div id="msgs">
+        <div class="mw"><div class="av ai">✦</div><div class="bbl ai">مرحباً! أنا مساعدك الذكي ✦
+أتحدث بأي لغة، وأقدر أحلل الصور والملفات.
+افتح تبويب «تعديل ملف» لرفع أي ملف وتعديله وتحميله!</div></div>
       </div>
-
-      <div id="error-bar"></div>
-
-      <div id="input-area">
-        <div id="pending-files"></div>
-        <div id="input-row">
-          <input type="file" id="chat-file-input" multiple
-            accept="image/*,.pdf,.txt,.md,.json,.csv,.js,.py,.html,.css,.ts,.jsx"
-            style="display:none" onchange="handleChatFiles(this)"/>
-          <button class="icon-btn" onclick="document.getElementById('chat-file-input').click()" title="إرفاق ملف">📎</button>
-          <textarea id="msg-input" rows="1" placeholder="اكتب رسالتك... (Enter للإرسال)"
-            oninput="autoResize(this);updateSendBtn()"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
-          <button id="send-btn" onclick="sendMessage()">↑</button>
+      <div id="eb"></div>
+      <div id="ia">
+        <div id="pf"></div>
+        <div id="ir">
+          <input type="file" id="cfi" multiple accept="image/*,.pdf,.txt,.md,.json,.csv,.js,.py,.html,.css,.ts,.jsx" style="display:none" onchange="hcf(this)"/>
+          <button class="icb" onclick="document.getElementById('cfi').click()" title="إرفاق">📎</button>
+          <textarea id="mi" rows="1" placeholder="اكتب رسالتك... (Enter للإرسال)" oninput="ar(this);usb()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"></textarea>
+          <button id="sb" onclick="send()">↑</button>
         </div>
-        <div id="input-hint">يدعم: صور • PDF • نصوص • كود • CSV</div>
+        <div id="ih">يدعم: صور • PDF • نصوص • كود • CSV</div>
       </div>
     </div>
 
-    <!-- ═══ EDITOR PANEL ═══ -->
-    <div id="editor-panel" class="hidden">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">✏️ تعديل ملف</div>
-          <div class="panel-sub">ارفع أي ملف وأخبرني كيف أعدله — سأعدله وتحمله مباشرة</div>
+    <!-- EDITOR -->
+    <div class="panel hidden" id="ep">
+      <div id="ov"><div class="sp"></div><div class="ot">جاري التعديل...</div></div>
+      <div class="ph"><div><div class="pt">✏️ تعديل ملف</div><div class="ps">ارفع أي ملف — سأعدله وتحمله مباشرة</div></div></div>
+      <div id="eb2">
+        <div id="dz" onclick="document.getElementById('efi').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="hd(event)">
+          <input type="file" id="efi" style="display:none" accept="image/*,.pdf,.txt,.md,.json,.csv,.js,.py,.html,.css,.ts,.jsx,.xml,.yaml,.yml,.sql" onchange="lf(this.files[0])"/>
+          <div class="di">📂</div>
+          <div class="dt">اسحب الملف هنا أو اضغط للاختيار</div>
+          <div class="ds">صور، PDF، نصوص، كود، CSV، JSON</div>
         </div>
-      </div>
-
-      <div id="editor-body">
-        <!-- Drop zone -->
-        <div id="drop-zone"
-          onclick="document.getElementById('editor-file-input').click()"
-          ondragover="event.preventDefault();this.classList.add('drag')"
-          ondragleave="this.classList.remove('drag')"
-          ondrop="handleEditorDrop(event)">
-          <input type="file" id="editor-file-input" style="display:none"
-            accept="image/*,.pdf,.txt,.md,.json,.csv,.js,.py,.html,.css,.ts,.jsx,.xml,.yaml,.yml,.sql"
-            onchange="loadEditorFile(this.files[0])"/>
-          <div class="dz-icon">📂</div>
-          <div class="dz-title">اسحب الملف هنا أو اضغط للاختيار</div>
-          <div class="dz-sub">يدعم: صور، PDF، نصوص، كود، CSV، JSON<br/>وأي ملف نصي آخر</div>
-        </div>
-
-        <!-- Loaded file view -->
-        <div id="editor-loaded" class="hidden">
-          <div class="file-info-bar">
-            <span class="fi-icon" id="fi-icon">📄</span>
-            <span class="fi-name" id="fi-name">—</span>
-            <span class="fi-size" id="fi-size"></span>
-            <button class="change-file-btn" onclick="resetEditor()">تغيير الملف</button>
+        <div id="el" class="hidden">
+          <div class="fib">
+            <span class="fi2" id="fic">📄</span>
+            <span class="fn2" id="fnm">—</span>
+            <span class="fs2" id="fsz2"></span>
+            <button class="cfb" onclick="re()">تغيير</button>
           </div>
-
-          <!-- Image preview -->
-          <div id="img-preview-wrap" class="hidden">
-            <img id="img-preview" alt="معاينة"/>
+          <div id="ipw" class="hidden"><img id="ip" alt="معاينة"/></div>
+          <div id="tew"><textarea id="te" placeholder="محتوى الملف..."></textarea></div>
+          <div id="ebar">
+            <button id="esb" onclick="ef()">✦ عدّل</button>
+            <input type="text" id="ei" placeholder="ماذا تريد أن أعدل؟ مثال: أضف تعليقات، صحح الأخطاء، ترجم..." onkeydown="if(event.key==='Enter')ef()"/>
           </div>
-
-          <!-- Text editor -->
-          <div id="text-editor-wrap">
-            <textarea id="text-editor" placeholder="محتوى الملف يظهر هنا..."></textarea>
-          </div>
-
-          <!-- Edit instruction bar -->
-          <div id="edit-bar">
-            <button id="edit-send-btn" onclick="editFile()">✦ عدّل</button>
-            <input type="text" id="edit-input"
-              placeholder="اكتب ما تريد تعديله... مثال: أضف تعليقات، صحح الأخطاء، ترجم..."
-              onkeydown="if(event.key==='Enter')editFile()"/>
-          </div>
-
-          <!-- Download bar -->
-          <div id="download-bar">
-            <span id="edit-status"></span>
-            <button id="download-btn" class="hidden" onclick="downloadFile()">⬇️ تحميل الملف</button>
+          <div id="dbar">
+            <span id="dbtx"></span>
+            <button id="dlb" class="hidden" onclick="dl()">⬇️ تحميل الملف</button>
           </div>
         </div>
       </div>
@@ -428,441 +178,234 @@
   </div>
 </div>
 
+<!-- Key Modal -->
+<div id="key-modal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center">
+  <div style="background:#0f0c29;border:1px solid rgba(99,102,241,0.3);border-radius:20px;padding:32px;width:90%;max-width:420px;box-shadow:0 30px 80px rgba(0,0,0,0.6)">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 12px;box-shadow:0 0 20px rgba(99,102,241,0.4)">✦</div>
+      <div style="font-size:17px;font-weight:700;color:#f1f5f9;margin-bottom:6px">مساعدي الذكي</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.6">أدخل مفتاح Anthropic API الخاص بك<br/>يُحفظ في متصفحك فقط ولا يُرسل لأحد</div>
+    </div>
+    <div style="margin-bottom:16px">
+      <input type="password" id="key-input" placeholder="sk-ant-api03-..." style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(99,102,241,0.3);background:rgba(255,255,255,0.05);color:#f1f5f9;font-size:13px;font-family:monospace;outline:none;direction:ltr;transition:border-color .2s" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(99,102,241,0.3)'" onkeydown="if(event.key==='Enter')saveKeyAndStart()"/>
+    </div>
+    <div style="font-size:11px;color:#475569;margin-bottom:20px;text-align:center;line-height:1.6">
+      احصل على مفتاحك من <a href="https://console.anthropic.com" target="_blank" style="color:#818cf8;text-decoration:none">console.anthropic.com</a>
+    </div>
+    <button onclick="saveKeyAndStart()" style="width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;font-size:14px;font-family:inherit;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(99,102,241,0.35)" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+      ابدأ الآن ✦
+    </button>
+  </div>
+</div>
+
 <script>
-// ═══════════════════════════════
-//  STATE
-// ═══════════════════════════════
-const SYSTEM = `You are a warm, thoughtful, and highly capable AI assistant named "مساعدي".
-You respond in whatever language the user writes in — Arabic, English, or any other language.
-Be warm, detailed, well-organized, and helpful. Use examples when useful.
-When editing files, return ONLY the edited content with no extra explanation unless asked.`;
 
-let chatHistory = [];   // {role, content, files?}
-let pendingFiles = [];  // [{kind, name, mimeType, data?, textContent?}]
+// ضع مفتاح Gemini هنا إذا تريد استخدامه بديلاً
+// أو اتركه فاضي لاستخدام Claude API
+const API_KEY = getKey();
 
-let editorFile = null;  // {name, kind, mimeType, originalContent, currentContent}
-
-// ═══════════════════════════════
-//  TAB SWITCHING
-// ═══════════════════════════════
-function switchTab(tab) {
-  document.getElementById('chat-panel').classList.toggle('hidden', tab !== 'chat');
-  document.getElementById('editor-panel').classList.toggle('hidden', tab !== 'editor');
-  document.getElementById('nav-chat').classList.toggle('active', tab === 'chat');
-  document.getElementById('nav-editor').classList.toggle('active', tab === 'editor');
+function getKey() {
+  return localStorage.getItem('claude_api_key') || '';
+}
+function saveKey(k) {
+  localStorage.setItem('claude_api_key', k);
+}
+function clearKey() {
+  localStorage.removeItem('claude_api_key');
 }
 
-// ═══════════════════════════════
-//  FILE UTILITIES
-// ═══════════════════════════════
-function readAsBase64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-}
-function readAsText(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result);
-    r.onerror = rej;
-    r.readAsText(file);
-  });
-}
-function readAsDataURL(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-}
-function getKind(file) {
-  if (file.type.startsWith('image/')) return 'image';
-  if (file.type === 'application/pdf') return 'pdf';
-  return 'text';
-}
-function fmtSize(bytes) {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
-  return (bytes/1024/1024).toFixed(1) + ' MB';
-}
-function fileIcon(kind) {
-  return { image:'🖼️', pdf:'📄', text:'📝' }[kind] || '📎';
+const SYS = `You are a warm, helpful AI assistant named مساعدي. Respond in the user's language. Be detailed and organized.`;
+let hist=[], pf=[], edf=null;
+
+function sw(t){
+  document.getElementById('cp').classList.toggle('hidden',t!=='chat');
+  document.getElementById('ep').classList.toggle('hidden',t!=='editor');
+  document.getElementById('n1').classList.toggle('active',t==='chat');
+  document.getElementById('n2').classList.toggle('active',t==='editor');
 }
 
-// ═══════════════════════════════
-//  ANTHROPIC API
-// ═══════════════════════════════
-async function callClaude(messages, systemOverride) {
-  // Build clean API messages
-  const raw = [];
-  for (const m of messages) {
-    if (m.role === 'user' && m.files && m.files.length > 0) {
-      const content = [];
-      for (const f of m.files) {
-        if (f.kind === 'image') {
-          content.push({ type:'image', source:{ type:'base64', media_type:f.mimeType, data:f.data } });
-        } else if (f.kind === 'pdf') {
-          content.push({ type:'document', source:{ type:'base64', media_type:'application/pdf', data:f.data } });
-        } else {
-          content.push({ type:'text', text:`[ملف: ${f.name}]\n${f.textContent}` });
-        }
+function rb64(file){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result.split(',')[1]);x.onerror=j;x.readAsDataURL(file)})}
+function rtxt(file){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=j;x.readAsText(file)})}
+function rdurl(file){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=j;x.readAsDataURL(file)})}
+function gk(f){if(f.type.startsWith('image/'))return'image';if(f.type==='application/pdf')return'pdf';return'text'}
+function fszf(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB'}
+function fi(k){return{image:'🖼️',pdf:'📄',text:'📝'}[k]||'📎'}
+
+async function ask(messages,sys){
+  const raw=[];
+  for(const m of messages){
+    const role=m.role==='assistant'?'assistant':'user';
+    if(role==='user'&&m.files&&m.files.length){
+      const parts=[];
+      for(const f of m.files){
+        if(f.kind==='image'){const mt=(f.mimeType||'').startsWith('image/')?f.mimeType:'image/jpeg';parts.push({type:'image',source:{type:'base64',media_type:mt,data:f.data}})}
+        else if(f.kind==='pdf'){parts.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:f.data}})}
+        else{parts.push({type:'text',text:'[ملف: '+f.name+']\n'+(f.tc||'')})}
       }
-      if (m.content) content.push({ type:'text', text:m.content });
-      raw.push({ role:'user', content });
-    } else if (m.content) {
-      raw.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content });
+      parts.push({type:'text',text:(m.content||'').trim()||'ساعدني في هذا الملف.'});
+      raw.push({role:'user',content:parts});
+    } else {
+      const txt=(m.content||'').trim();
+      if(txt)raw.push({role,content:txt});
     }
   }
-
-  // Remove leading assistant, merge consecutive same-role
-  const apiMsgs = [];
-  for (const msg of raw) {
-    if (apiMsgs.length === 0 && msg.role === 'assistant') continue;
-    const last = apiMsgs[apiMsgs.length - 1];
-    if (last && last.role === msg.role) {
-      if (typeof last.content === 'string' && typeof msg.content === 'string')
-        last.content += '\n' + msg.content;
-      continue;
-    }
-    apiMsgs.push(msg);
+  while(raw.length&&raw[0].role==='assistant')raw.shift();
+  const api=[];
+  for(const msg of raw){
+    const last=api[api.length-1];
+    if(last&&last.role===msg.role){if(typeof last.content==='string'&&typeof msg.content==='string')last.content+='\n'+msg.content;continue}
+    api.push({role:msg.role,content:msg.content});
   }
-
-  if (!apiMsgs.length) throw new Error('لا توجد رسائل للإرسال');
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      system: systemOverride || SYSTEM,
-      messages: apiMsgs,
-    }),
+  if(!api.length)throw new Error('لا توجد رسائل');
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:4096,system:sys||SYS,messages:api})
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
-  return data.content?.[0]?.text || '';
+  const d=await res.json();
+  if(!res.ok)throw new Error(d?.error?.message||'HTTP '+res.status);
+  return d.content?.[0]?.text||'';
 }
 
-// ═══════════════════════════════
-//  CHAT
-// ═══════════════════════════════
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+function ar(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,115)+'px'}
+function usb(){const h=document.getElementById('mi').value.trim().length>0||pf.length>0;document.getElementById('sb').classList.toggle('on',h)}
+function serr(m){const e=document.getElementById('eb');if(m){e.textContent='❌ '+m;e.classList.add('show')}else e.classList.remove('show')}
+
+async function hcf(inp){
+  const files=Array.from(inp.files);
+  for(const f of files){const k=gk(f);const b={name:f.name,kind:k,mimeType:f.type};if(k==='image'||k==='pdf')pf.push({...b,data:await rb64(f)});else pf.push({...b,tc:await rtxt(f)})}
+  rpf();usb();inp.value='';
 }
 
-function updateSendBtn() {
-  const hasText = document.getElementById('msg-input').value.trim().length > 0;
-  const hasFiles = pendingFiles.length > 0;
-  const btn = document.getElementById('send-btn');
-  btn.classList.toggle('active', hasText || hasFiles);
-}
-
-async function handleChatFiles(input) {
-  const files = Array.from(input.files);
-  if (!files.length) return;
-  for (const file of files) {
-    const kind = getKind(file);
-    const base = { name: file.name, kind, mimeType: file.type };
-    if (kind === 'image' || kind === 'pdf') {
-      pendingFiles.push({ ...base, data: await readAsBase64(file) });
-    } else {
-      pendingFiles.push({ ...base, textContent: await readAsText(file) });
-    }
-  }
-  renderPendingFiles();
-  updateSendBtn();
-  input.value = '';
-}
-
-function renderPendingFiles() {
-  const wrap = document.getElementById('pending-files');
-  wrap.innerHTML = '';
-  pendingFiles.forEach((f, i) => {
-    if (f.kind === 'image') {
-      const div = document.createElement('div');
-      div.className = 'img-thumb-wrap';
-      div.innerHTML = `<img src="data:${f.mimeType};base64,${f.data}" alt="${f.name}"/>
-        <button class="rm" onclick="removePending(${i})">×</button>`;
-      wrap.appendChild(div);
-    } else {
-      const div = document.createElement('div');
-      div.className = 'fchip';
-      div.innerHTML = `<span>${fileIcon(f.kind)}</span>
-        <span class="name">${f.name}</span>
-        <button onclick="removePending(${i})">×</button>`;
-      wrap.appendChild(div);
-    }
+function rpf(){
+  const w=document.getElementById('pf');w.innerHTML='';
+  pf.forEach((f,i)=>{
+    if(f.kind==='image'){const d=document.createElement('div');d.className='ithw';d.innerHTML=`<img src="data:${f.mimeType};base64,${f.data}" alt="${f.name}"/><button class="rm" onclick="rp(${i})">×</button>`;w.appendChild(d)}
+    else{const d=document.createElement('div');d.className='fchip';d.innerHTML=`<span>${fi(f.kind)}</span><span class="fn">${f.name}</span><button onclick="rp(${i})">×</button>`;w.appendChild(d)}
   });
 }
+function rp(i){pf.splice(i,1);rpf();usb()}
 
-function removePending(i) {
-  pendingFiles.splice(i, 1);
-  renderPendingFiles();
-  updateSendBtn();
-}
+function newChat(){hist=[];document.getElementById('msgs').innerHTML=`<div class="mw"><div class="av ai">✦</div><div class="bbl ai">محادثة جديدة — كيف يمكنني مساعدتك؟</div></div>`;serr('')}
 
-function newChat() {
-  chatHistory = [];
-  document.getElementById('messages').innerHTML = `
-    <div class="msg-wrap">
-      <div class="avatar ai">✦</div>
-      <div class="bubble ai">محادثة جديدة — كيف يمكنني مساعدتك؟</div>
-    </div>`;
-  setError('');
-}
-
-function setError(msg) {
-  const bar = document.getElementById('error-bar');
-  if (msg) { bar.textContent = '❌ ' + msg; bar.classList.add('show'); }
-  else { bar.classList.remove('show'); }
-}
-
-function appendMessage(role, content, files) {
-  const wrap = document.createElement('div');
-  wrap.className = 'msg-wrap' + (role === 'user' ? ' user' : '');
-
-  const avatar = document.createElement('div');
-  avatar.className = 'avatar ' + (role === 'user' ? 'user' : 'ai');
-  avatar.textContent = role === 'user' ? '👤' : '✦';
-
-  const inner = document.createElement('div');
-  inner.style.cssText = 'display:flex;flex-direction:column;gap:6px;max-width:72%;align-items:' + (role==='user'?'flex-end':'flex-start');
-
-  if (files && files.length) {
-    const fwrap = document.createElement('div');
-    fwrap.className = 'msg-files';
-    files.forEach(f => {
-      if (f.kind === 'image') {
-        const img = document.createElement('img');
-        img.src = `data:${f.mimeType};base64,${f.data}`;
-        img.alt = f.name;
-        fwrap.appendChild(img);
-      } else {
-        const chip = document.createElement('div');
-        chip.className = 'fchip';
-        chip.innerHTML = `<span>${fileIcon(f.kind)}</span><span class="name">${f.name}</span>`;
-        fwrap.appendChild(chip);
-      }
-    });
-    inner.appendChild(fwrap);
+function am(role,content,files){
+  const w=document.createElement('div');w.className='mw'+(role==='user'?' u':'');
+  const av=document.createElement('div');av.className='av '+(role==='user'?'us':'ai');av.textContent=role==='user'?'👤':'✦';
+  const inn=document.createElement('div');inn.style.cssText='display:flex;flex-direction:column;gap:5px;max-width:74%;align-items:'+(role==='user'?'flex-end':'flex-start');
+  if(files&&files.length){
+    const fw=document.createElement('div');fw.className='mfiles';
+    files.forEach(f=>{if(f.kind==='image'){const img=document.createElement('img');img.src=`data:${f.mimeType};base64,${f.data}`;fw.appendChild(img)}else{const c=document.createElement('div');c.className='fchip';c.innerHTML=`<span>${fi(f.kind)}</span><span class="fn">${f.name}</span>`;fw.appendChild(c)}});
+    inn.appendChild(fw);
   }
-
-  if (content) {
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble ' + (role === 'user' ? 'user' : 'ai');
-    bubble.textContent = content;
-    inner.appendChild(bubble);
-  }
-
-  if (role === 'user') { wrap.appendChild(inner); wrap.appendChild(avatar); }
-  else { wrap.appendChild(avatar); wrap.appendChild(inner); }
-
-  document.getElementById('messages').appendChild(wrap);
-  wrap.scrollIntoView({ behavior:'smooth', block:'end' });
-  return inner.querySelector('.bubble.ai');
+  if(content){const b=document.createElement('div');b.className='bbl '+(role==='user'?'us':'ai');b.textContent=content;inn.appendChild(b)}
+  if(role==='user'){w.appendChild(inn);w.appendChild(av)}else{w.appendChild(av);w.appendChild(inn)}
+  document.getElementById('msgs').appendChild(w);
+  w.scrollIntoView({behavior:'smooth',block:'end'});
 }
 
-function addTyping() {
-  const wrap = document.createElement('div');
-  wrap.className = 'msg-wrap'; wrap.id = 'typing-wrap';
-  wrap.innerHTML = `<div class="avatar ai">✦</div>
-    <div class="bubble ai"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
-  document.getElementById('messages').appendChild(wrap);
-  wrap.scrollIntoView({ behavior:'smooth', block:'end' });
-}
-function removeTyping() { document.getElementById('typing-wrap')?.remove(); }
+function aty(){const w=document.createElement('div');w.className='mw';w.id='tw';w.innerHTML=`<div class="av ai">✦</div><div class="bbl ai"><div class="tdots"><span></span><span></span><span></span></div></div>`;document.getElementById('msgs').appendChild(w);w.scrollIntoView({behavior:'smooth',block:'end'})}
+function rty(){document.getElementById('tw')?.remove()}
 
-async function sendMessage() {
-  const inputEl = document.getElementById('msg-input');
-  const text = inputEl.value.trim();
-  if (!text && pendingFiles.length === 0) return;
-
-  setError('');
-  const files = [...pendingFiles];
-  pendingFiles = [];
-  document.getElementById('pending-files').innerHTML = '';
-
-  const userMsg = { role:'user', content:text, files };
-  chatHistory.push(userMsg);
-  appendMessage('user', text, files);
-
-  inputEl.value = '';
-  inputEl.style.height = 'auto';
-  updateSendBtn();
-  document.getElementById('send-btn').disabled = true;
-
-  addTyping();
-  try {
-    const reply = await callClaude(chatHistory);
-    removeTyping();
-    chatHistory.push({ role:'assistant', content:reply });
-    appendMessage('assistant', reply);
-  } catch(e) {
-    removeTyping();
-    setError(e.message);
-    chatHistory.pop();
-  }
-  document.getElementById('send-btn').disabled = false;
-  updateSendBtn();
+async function send(){
+  const inp=document.getElementById('mi'),txt=inp.value.trim();
+  if(!txt&&pf.length===0)return;
+  serr('');
+  const files=[...pf];pf=[];document.getElementById('pf').innerHTML='';
+  hist.push({role:'user',content:txt,files});am('user',txt,files);
+  inp.value='';inp.style.height='auto';usb();
+  document.getElementById('sb').disabled=true;aty();
+  try{const r=await ask(hist);rty();hist.push({role:'assistant',content:r});am('assistant',r)}
+  catch(e){rty();serr(e.message);hist.pop()}
+  document.getElementById('sb').disabled=false;usb();
 }
 
-// ═══════════════════════════════
-//  FILE EDITOR
-// ═══════════════════════════════
-function handleEditorDrop(e) {
-  e.preventDefault();
-  document.getElementById('drop-zone').classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if (file) loadEditorFile(file);
+function hd(e){e.preventDefault();document.getElementById('dz').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)lf(f)}
+
+async function lf(file){
+  const k=gk(file);
+  document.getElementById('fnm').textContent=file.name;
+  document.getElementById('fsz2').textContent=fszf(file.size);
+  document.getElementById('fic').textContent=fi(k);
+  if(k==='image'){const du=await rdurl(file);document.getElementById('ip').src=du;document.getElementById('ipw').classList.remove('hidden');document.getElementById('tew').classList.add('hidden');edf={name:file.name,kind:k,mimeType:file.type,cur:du.split(',')[1]}}
+  else if(k==='pdf'){const b64=await rb64(file);document.getElementById('te').value='[PDF — اكتب ما تريد منه أدناه]';document.getElementById('ipw').classList.add('hidden');document.getElementById('tew').classList.remove('hidden');edf={name:file.name,kind:k,mimeType:'application/pdf',cur:b64}}
+  else{const txt=await rtxt(file);document.getElementById('te').value=txt;document.getElementById('ipw').classList.add('hidden');document.getElementById('tew').classList.remove('hidden');edf={name:file.name,kind:'text',mimeType:file.type,cur:txt}}
+  document.getElementById('dz').classList.add('hidden');document.getElementById('el').classList.remove('hidden');
+  document.getElementById('dlb').classList.add('hidden');document.getElementById('dbtx').textContent='الملف جاهز — اكتب التعليمة وسأعدله';
 }
 
-async function loadEditorFile(file) {
-  const kind = getKind(file);
-  document.getElementById('fi-name').textContent = file.name;
-  document.getElementById('fi-size').textContent = fmtSize(file.size);
-  document.getElementById('fi-icon').textContent = fileIcon(kind);
+function re(){edf=null;document.getElementById('dz').classList.remove('hidden');document.getElementById('el').classList.add('hidden');document.getElementById('efi').value='';document.getElementById('dlb').classList.add('hidden');document.getElementById('dbtx').textContent='';document.getElementById('ei').value=''}
 
-  let currentContent = '';
-
-  if (kind === 'image') {
-    const dataUrl = await readAsDataURL(file);
-    const b64 = dataUrl.split(',')[1];
-    document.getElementById('img-preview').src = dataUrl;
-    document.getElementById('img-preview-wrap').classList.remove('hidden');
-    document.getElementById('text-editor-wrap').classList.add('hidden');
-    currentContent = b64;
-    editorFile = { name: file.name, kind, mimeType: file.type, originalContent: b64, currentContent: b64 };
-  } else if (kind === 'pdf') {
-    const b64 = await readAsBase64(file);
-    document.getElementById('text-editor').value = '[ملف PDF — أخبرني ماذا تريد أن تفعل به]';
-    document.getElementById('img-preview-wrap').classList.add('hidden');
-    document.getElementById('text-editor-wrap').classList.remove('hidden');
-    currentContent = b64;
-    editorFile = { name: file.name, kind, mimeType: file.type, originalContent: b64, currentContent: b64 };
-  } else {
-    const text = await readAsText(file);
-    document.getElementById('text-editor').value = text;
-    document.getElementById('img-preview-wrap').classList.add('hidden');
-    document.getElementById('text-editor-wrap').classList.remove('hidden');
-    currentContent = text;
-    editorFile = { name: file.name, kind, mimeType: file.type, originalContent: text, currentContent: text };
-  }
-
-  document.getElementById('drop-zone').classList.add('hidden');
-  document.getElementById('editor-loaded').classList.remove('hidden');
-  document.getElementById('download-btn').classList.add('hidden');
-  document.getElementById('edit-status').textContent = 'الملف جاهز — أخبرني ماذا تريد أن أعدل';
-}
-
-function resetEditor() {
-  editorFile = null;
-  document.getElementById('drop-zone').classList.remove('hidden');
-  document.getElementById('editor-loaded').classList.add('hidden');
-  document.getElementById('editor-file-input').value = '';
-  document.getElementById('download-btn').classList.add('hidden');
-  document.getElementById('edit-status').textContent = '';
-  document.getElementById('edit-input').value = '';
-  document.getElementById('text-editor').value = '';
-}
-
-async function editFile() {
-  if (!editorFile) return;
-  const instruction = document.getElementById('edit-input').value.trim();
-  if (!instruction) { document.getElementById('edit-input').focus(); return; }
-
-  document.getElementById('edit-overlay').classList.add('show');
-  document.getElementById('edit-send-btn').disabled = true;
-
-  try {
-    let reply = '';
-
-    if (editorFile.kind === 'image') {
-      // For images: describe what to do (can't pixel-edit, but can describe or analyze)
-      const msgs = [{
-        role: 'user',
-        files: [{ kind:'image', name: editorFile.name, mimeType: editorFile.mimeType, data: editorFile.currentContent }],
-        content: instruction,
-      }];
-      reply = await callClaude(msgs, SYSTEM);
-      // Show reply as status — can't re-render image
-      document.getElementById('edit-status').textContent = '✅ ' + reply.slice(0, 120) + (reply.length > 120 ? '...' : '');
-      document.getElementById('download-btn').classList.add('hidden');
-
-    } else if (editorFile.kind === 'pdf') {
-      const msgs = [{
-        role: 'user',
-        files: [{ kind:'pdf', name: editorFile.name, mimeType: editorFile.mimeType, data: editorFile.currentContent }],
-        content: instruction,
-      }];
-      reply = await callClaude(msgs, `You are a helpful assistant. The user will give you instructions about a PDF file. Respond helpfully in the user's language.`);
-      document.getElementById('text-editor').value = reply;
-      editorFile.currentContent = reply;
-      editorFile.kind = 'text'; // now it's text output
-      editorFile.name = editorFile.name.replace('.pdf', '-edited.txt');
-      document.getElementById('fi-name').textContent = editorFile.name;
-      document.getElementById('img-preview-wrap').classList.add('hidden');
-      document.getElementById('text-editor-wrap').classList.remove('hidden');
-      document.getElementById('edit-status').textContent = '✅ تم — يمكنك تحميل النص الناتج';
-      document.getElementById('download-btn').classList.remove('hidden');
-
+async function ef(){
+  if(!edf)return;
+  const inst=document.getElementById('ei').value.trim();
+  if(!inst){document.getElementById('ei').focus();return}
+  document.getElementById('ov').classList.add('show');document.getElementById('esb').disabled=true;
+  try{
+    let reply='';
+    if(edf.kind==='image'){
+      const mt=edf.mimeType.startsWith('image/')?edf.mimeType:'image/jpeg';
+      reply=await ask([{role:'user',files:[{kind:'image',name:edf.name,mimeType:mt,data:edf.cur}],content:inst}],SYS);
+      document.getElementById('dbtx').textContent='✅ '+reply.slice(0,120)+(reply.length>120?'...':'');
+      document.getElementById('dlb').classList.add('hidden');
+    } else if(edf.kind==='pdf'){
+      reply=await ask([{role:'user',files:[{kind:'pdf',name:edf.name,mimeType:'application/pdf',data:edf.cur}],content:inst}],'You are a helpful assistant. Help with the PDF. Respond in user language.');
+      document.getElementById('te').value=reply;edf.cur=reply;edf.kind='text';
+      edf.name=edf.name.replace(/\.pdf$/i,'-result.txt');document.getElementById('fnm').textContent=edf.name;
+      document.getElementById('ipw').classList.add('hidden');document.getElementById('tew').classList.remove('hidden');
+      document.getElementById('dbtx').textContent='✅ تم — يمكنك تحميل النتيجة';document.getElementById('dlb').classList.remove('hidden');
     } else {
-      // Text/code file
-      const currentText = document.getElementById('text-editor').value;
-      editorFile.currentContent = currentText;
-      const msgs = [{
-        role: 'user',
-        content: `هذا محتوى الملف "${editorFile.name}":\n\`\`\`\n${currentText}\n\`\`\`\n\nالتعليمات: ${instruction}\n\nأعطني الملف المعدل فقط بدون أي شرح إضافي.`,
-      }];
-      reply = await callClaude(msgs, `You are a code/text editor assistant. When given a file and edit instructions, return ONLY the edited file content with no explanation, no markdown fences, no extra text — just the raw content.`);
-
-      // Strip possible markdown fences
-      reply = reply.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '').trim();
-
-      editorFile.currentContent = reply;
-      document.getElementById('text-editor').value = reply;
-      document.getElementById('edit-status').textContent = '✅ تم التعديل — يمكنك مراجعته وتحميله';
-      document.getElementById('download-btn').classList.remove('hidden');
+      const cur=document.getElementById('te').value;
+      reply=await ask([{role:'user',content:`الملف "${edf.name}":\n\`\`\`\n${cur}\n\`\`\`\nالتعليمة: ${inst}\nأعطني المحتوى المعدل فقط بدون شرح.`}],'You are a file editor. Return ONLY the edited content, no markdown fences, no explanations.');
+      reply=reply.replace(/^```[\w]*\n?/,'').replace(/\n?```$/,'').trim();
+      document.getElementById('te').value=reply;edf.cur=reply;
+      document.getElementById('dbtx').textContent='✅ تم التعديل — راجعه وحمّله';document.getElementById('dlb').classList.remove('hidden');
     }
-
-    document.getElementById('edit-input').value = '';
-  } catch(e) {
-    document.getElementById('edit-status').textContent = '❌ ' + e.message;
-  }
-
-  document.getElementById('edit-overlay').classList.remove('show');
-  document.getElementById('edit-send-btn').disabled = false;
+    document.getElementById('ei').value='';
+  }catch(e){document.getElementById('dbtx').textContent='❌ '+e.message}
+  document.getElementById('ov').classList.remove('show');document.getElementById('esb').disabled=false;
 }
 
-function downloadFile() {
-  if (!editorFile) return;
-  // Get latest content from editor if text
-  if (editorFile.kind === 'text') {
-    editorFile.currentContent = document.getElementById('text-editor').value;
-  }
-
+function dl(){
+  if(!edf)return;
+  if(edf.kind==='text')edf.cur=document.getElementById('te').value;
   let blob;
-  if (editorFile.kind === 'image') {
-    const binary = atob(editorFile.currentContent);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    blob = new Blob([bytes], { type: editorFile.mimeType });
-  } else {
-    blob = new Blob([editorFile.currentContent], { type: 'text/plain;charset=utf-8' });
-  }
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = editorFile.name.includes('edited') ? editorFile.name : 'edited-' + editorFile.name;
-  a.click();
-  URL.revokeObjectURL(url);
+  if(edf.kind==='image'){const bin=atob(edf.cur);const ba=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)ba[i]=bin.charCodeAt(i);blob=new Blob([ba],{type:edf.mimeType})}
+  else blob=new Blob([edf.cur],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='edited-'+edf.name;a.click();URL.revokeObjectURL(a.href);
 }
+
+function showKeyModal() {
+  const modal = document.getElementById('key-modal');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('key-input').focus(), 100);
+}
+function hideKeyModal() {
+  document.getElementById('key-modal').style.display = 'none';
+}
+function showKeySettings() {
+  document.getElementById('key-input').value = '';
+  showKeyModal();
+}
+function saveKeyAndStart() {
+  const k = document.getElementById('key-input').value.trim();
+  if (!k.startsWith('sk-ant-')) {
+    document.getElementById('key-input').style.borderColor = 'rgba(239,68,68,0.6)';
+    document.getElementById('key-input').placeholder = '⚠️ المفتاح غير صحيح — يجب أن يبدأ بـ sk-ant-';
+    return;
+  }
+  saveKey(k);
+  hideKeyModal();
+}
+
+// On load — show modal if no key
+window.addEventListener('load', () => {
+  if (!getKey()) showKeyModal();
+});
 </script>
 </body>
 </html>
