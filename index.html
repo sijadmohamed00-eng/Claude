@@ -109,7 +109,7 @@ html,body{height:100%;font-family:'IBM Plex Sans Arabic',sans-serif;background:#
   <div id="sidebar">
     <div class="logo">
       <div class="logo-ic">✦</div>
-      <div><div class="logo-t">مساعدي الذكي</div><div class="logo-s"><span class="dot"></span>Claude Sonnet</div></div>
+      <div><div class="logo-t">مساعدي الذكي</div><div class="logo-s"><span class="dot"></span>Gemini 2.5 Pro</div></div>
     </div>
     <button class="nb active" id="n1" onclick="sw('chat')"><span class="nb-ic">💬</span>المحادثة</button>
     <button class="nb" id="n2" onclick="sw('editor')"><span class="nb-ic">✏️</span>تعديل ملف</button>
@@ -187,10 +187,10 @@ html,body{height:100%;font-family:'IBM Plex Sans Arabic',sans-serif;background:#
       <div style="font-size:12px;color:#64748b;line-height:1.6">أدخل مفتاح Anthropic API الخاص بك<br/>يُحفظ في متصفحك فقط ولا يُرسل لأحد</div>
     </div>
     <div style="margin-bottom:16px">
-      <input type="password" id="key-input" placeholder="sk-ant-api03-..." style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(99,102,241,0.3);background:rgba(255,255,255,0.05);color:#f1f5f9;font-size:13px;font-family:monospace;outline:none;direction:ltr;transition:border-color .2s" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(99,102,241,0.3)'" onkeydown="if(event.key==='Enter')saveKeyAndStart()"/>
+      <input type="password" id="key-input" placeholder="AIzaSy..." style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(99,102,241,0.3);background:rgba(255,255,255,0.05);color:#f1f5f9;font-size:13px;font-family:monospace;outline:none;direction:ltr;transition:border-color .2s" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(99,102,241,0.3)'" onkeydown="if(event.key==='Enter')saveKeyAndStart()"/>
     </div>
     <div style="font-size:11px;color:#475569;margin-bottom:20px;text-align:center;line-height:1.6">
-      احصل على مفتاحك من <a href="https://console.anthropic.com" target="_blank" style="color:#818cf8;text-decoration:none">console.anthropic.com</a>
+      احصل على مفتاحك من <a href="https://aistudio.google.com" target="_blank" style="color:#818cf8;text-decoration:none">aistudio.google.com</a>
     </div>
     <button onclick="saveKeyAndStart()" style="width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;font-size:14px;font-family:inherit;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(99,102,241,0.35)" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
       ابدأ الآن ✦
@@ -205,7 +205,7 @@ html,body{height:100%;font-family:'IBM Plex Sans Arabic',sans-serif;background:#
 // API key loaded dynamically
 
 function getKey() {
-  return localStorage.getItem('claude_api_key') || '';
+  return localStorage.getItem('claude_api_key') || 'AIzaSyBMok7QsIiijb6jxMUlvPV2z8qBxFrRVyo';
 }
 function saveKey(k) {
   localStorage.setItem('claude_api_key', k);
@@ -231,49 +231,61 @@ function gk(f){if(f.type.startsWith('image/'))return'image';if(f.type==='applica
 function fszf(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB'}
 function fi(k){return{image:'🖼️',pdf:'📄',text:'📝'}[k]||'📎'}
 
-async function ask(messages,sys){
-  const raw=[];
-  for(const m of messages){
-    const role=m.role==='assistant'?'assistant':'user';
-    if(role==='user'&&m.files&&m.files.length){
-      const parts=[];
-      for(const f of m.files){
-        if(f.kind==='image'){const mt=(f.mimeType||'').startsWith('image/')?f.mimeType:'image/jpeg';parts.push({type:'image',source:{type:'base64',media_type:mt,data:f.data}})}
-        else if(f.kind==='pdf'){parts.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:f.data}})}
-        else{parts.push({type:'text',text:'[ملف: '+f.name+']\n'+(f.tc||'')})}
+async function ask(messages, sys) {
+  const GEMINI_KEY = getKey();
+  const contents = [];
+
+  for (const m of messages) {
+    // skip leading assistant
+    if (!contents.length && m.role === 'assistant') continue;
+    const role = m.role === 'assistant' ? 'model' : 'user';
+    const parts = [];
+
+    if (m.files && m.files.length) {
+      for (const f of m.files) {
+        if (f.kind === 'image') {
+          const mt = (f.mimeType||'').startsWith('image/') ? f.mimeType : 'image/jpeg';
+          parts.push({ inline_data: { mime_type: mt, data: f.data } });
+        } else if (f.kind === 'pdf') {
+          parts.push({ inline_data: { mime_type: 'application/pdf', data: f.data } });
+        } else {
+          parts.push({ text: '[ملف: ' + f.name + ']\n' + (f.tc||'') });
+        }
       }
-      parts.push({type:'text',text:(m.content||'').trim()||'ساعدني في هذا الملف.'});
-      raw.push({role:'user',content:parts});
+    }
+    const txt = (m.content||'').trim();
+    if (txt) parts.push({ text: txt });
+    if (!parts.length) parts.push({ text: 'ساعدني.' });
+
+    // merge consecutive same role
+    const last = contents[contents.length-1];
+    if (last && last.role === role) {
+      last.parts.push(...parts);
     } else {
-      const txt=(m.content||'').trim();
-      if(txt)raw.push({role,content:txt});
+      contents.push({ role, parts });
     }
   }
-  while(raw.length&&raw[0].role==='assistant')raw.shift();
-  const api=[];
-  for(const msg of raw){
-    const last=api[api.length-1];
-    if(last&&last.role===msg.role){if(typeof last.content==='string'&&typeof msg.content==='string')last.content+='\n'+msg.content;continue}
-    api.push({role:msg.role,content:msg.content});
-  }
-  if(!api.length)throw new Error('لا توجد رسائل');
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key': getKey(),
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true'
-    },
-    body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:2048,system:sys||SYS,messages:api})
-  });
-  const d=await res.json();
-  if(!res.ok){
-    console.error('API ERROR:', JSON.stringify(d));
-    console.error('PAYLOAD:', JSON.stringify({model:'claude-sonnet-4-5',messages:api,system:sys||SYS}));
-    throw new Error(d?.error?.message||'HTTP '+res.status);
-  }
-  return d.content?.[0]?.text||'';
+
+  if (!contents.length) throw new Error('لا توجد رسائل');
+
+  const systemInstruction = { parts: [{ text: sys || SYS }] };
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-05-06:generateContent?key=${GEMINI_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        system_instruction: systemInstruction,
+        contents,
+        generationConfig: { temperature: 0.85, maxOutputTokens: 4096 }
+      })
+    }
+  );
+
+  const d = await res.json();
+  if (!res.ok) throw new Error(d?.error?.message || 'HTTP ' + res.status);
+  return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
 function ar(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,115)+'px'}
@@ -397,9 +409,9 @@ function showKeySettings() {
 }
 function saveKeyAndStart() {
   const k = document.getElementById('key-input').value.trim();
-  if (!k.startsWith('sk-ant-')) {
+  if (k.length < 10) {
     document.getElementById('key-input').style.borderColor = 'rgba(239,68,68,0.6)';
-    document.getElementById('key-input').placeholder = '⚠️ المفتاح غير صحيح — يجب أن يبدأ بـ sk-ant-';
+    document.getElementById('key-input').placeholder = '⚠️ المفتاح غير صحيح';
     return;
   }
   saveKey(k);
