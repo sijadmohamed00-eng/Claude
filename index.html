@@ -265,7 +265,7 @@ async function ask(messages,sys){
       'anthropic-version':'2023-06-01',
       'anthropic-dangerous-direct-browser-access':'true'
     },
-    body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:2048,system:sys||SYS,messages:api})
+    body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:2048,system:sys||SYS,messages:api})
   });
   const d=await res.json();
   if(!res.ok)throw new Error(d?.error?.message||'HTTP '+res.status);
