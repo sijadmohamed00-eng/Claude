@@ -202,7 +202,7 @@ html,body{height:100%;font-family:'IBM Plex Sans Arabic',sans-serif;background:#
 
 // ضع مفتاح Gemini هنا إذا تريد استخدامه بديلاً
 // أو اتركه فاضي لاستخدام Claude API
-const API_KEY = getKey();
+// API key loaded dynamically
 
 function getKey() {
   return localStorage.getItem('claude_api_key') || '';
@@ -261,11 +261,11 @@ async function ask(messages,sys){
     method:'POST',
     headers:{
       'Content-Type':'application/json',
-      'x-api-key': API_KEY,
+      'x-api-key': getKey(),
       'anthropic-version':'2023-06-01',
       'anthropic-dangerous-direct-browser-access':'true'
     },
-    body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:4096,system:sys||SYS,messages:api})
+    body:JSON.stringify({model:'claude-haiku-4-5',max_tokens:2048,system:sys||SYS,messages:api})
   });
   const d=await res.json();
   if(!res.ok)throw new Error(d?.error?.message||'HTTP '+res.status);
