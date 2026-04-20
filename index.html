@@ -109,7 +109,7 @@ html,body{height:100%;font-family:'IBM Plex Sans Arabic',sans-serif;background:#
   <div id="sidebar">
     <div class="logo">
       <div class="logo-ic">✦</div>
-      <div><div class="logo-t">مساعدي الذكي</div><div class="logo-s"><span class="dot"></span>Gemini 2.5 Pro</div></div>
+      <div><div class="logo-t">مساعدي الذكي</div><div class="logo-s"><span class="dot"></span>Llama 4 Scout</div></div>
     </div>
     <button class="nb active" id="n1" onclick="sw('chat')"><span class="nb-ic">💬</span>المحادثة</button>
     <button class="nb" id="n2" onclick="sw('editor')"><span class="nb-ic">✏️</span>تعديل ملف</button>
@@ -187,10 +187,10 @@ html,body{height:100%;font-family:'IBM Plex Sans Arabic',sans-serif;background:#
       <div style="font-size:12px;color:#64748b;line-height:1.6">أدخل مفتاح Anthropic API الخاص بك<br/>يُحفظ في متصفحك فقط ولا يُرسل لأحد</div>
     </div>
     <div style="margin-bottom:16px">
-      <input type="password" id="key-input" placeholder="AIzaSy..." style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(99,102,241,0.3);background:rgba(255,255,255,0.05);color:#f1f5f9;font-size:13px;font-family:monospace;outline:none;direction:ltr;transition:border-color .2s" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(99,102,241,0.3)'" onkeydown="if(event.key==='Enter')saveKeyAndStart()"/>
+      <input type="password" id="key-input" placeholder="gsk_..." style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(99,102,241,0.3);background:rgba(255,255,255,0.05);color:#f1f5f9;font-size:13px;font-family:monospace;outline:none;direction:ltr;transition:border-color .2s" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(99,102,241,0.3)'" onkeydown="if(event.key==='Enter')saveKeyAndStart()"/>
     </div>
     <div style="font-size:11px;color:#475569;margin-bottom:20px;text-align:center;line-height:1.6">
-      احصل على مفتاحك من <a href="https://aistudio.google.com" target="_blank" style="color:#818cf8;text-decoration:none">aistudio.google.com</a>
+      احصل على مفتاحك من <a href="https://console.groq.com" target="_blank" style="color:#818cf8;text-decoration:none">console.groq.com</a>
     </div>
     <button onclick="saveKeyAndStart()" style="width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;font-size:14px;font-family:inherit;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(99,102,241,0.35)" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
       ابدأ الآن ✦
@@ -232,61 +232,65 @@ function fszf(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'
 function fi(k){return{image:'🖼️',pdf:'📄',text:'📝'}[k]||'📎'}
 
 async function ask(messages, sys) {
-  const GEMINI_KEY = getKey();
-  const contents = [];
+  const GROQ_KEY = getKey();
+  const apiMessages = [];
 
   for (const m of messages) {
-    // skip leading assistant
-    if (!contents.length && m.role === 'assistant') continue;
-    const role = m.role === 'assistant' ? 'model' : 'user';
-    const parts = [];
+    const role = m.role === 'assistant' ? 'assistant' : 'user';
+    if (apiMessages.length === 0 && role === 'assistant') continue;
 
-    if (m.files && m.files.length) {
+    let content = '';
+    if (role === 'user' && m.files && m.files.length) {
+      const parts = [];
       for (const f of m.files) {
         if (f.kind === 'image') {
           const mt = (f.mimeType||'').startsWith('image/') ? f.mimeType : 'image/jpeg';
-          parts.push({ inline_data: { mime_type: mt, data: f.data } });
-        } else if (f.kind === 'pdf') {
-          parts.push({ inline_data: { mime_type: 'application/pdf', data: f.data } });
+          parts.push({ type:'image_url', image_url:{ url:`data:${mt};base64,${f.data}` } });
         } else {
-          parts.push({ text: '[ملف: ' + f.name + ']\n' + (f.tc||'') });
+          parts.push({ type:'text', text:`[ملف: ${f.name}]\n${f.tc||''}` });
         }
       }
-    }
-    const txt = (m.content||'').trim();
-    if (txt) parts.push({ text: txt });
-    if (!parts.length) parts.push({ text: 'ساعدني.' });
-
-    // merge consecutive same role
-    const last = contents[contents.length-1];
-    if (last && last.role === role) {
-      last.parts.push(...parts);
+      if (m.content) parts.push({ type:'text', text: m.content });
+      else parts.push({ type:'text', text:'ساعدني في هذا.' });
+      content = parts;
     } else {
-      contents.push({ role, parts });
+      content = (m.content||'').trim();
+      if (!content) continue;
     }
+
+    const last = apiMessages[apiMessages.length-1];
+    if (last && last.role === role) {
+      if (typeof last.content === 'string' && typeof content === 'string')
+        last.content += '\n' + content;
+      continue;
+    }
+    apiMessages.push({ role, content });
   }
 
-  if (!contents.length) throw new Error('لا توجد رسائل');
+  if (!apiMessages.length) throw new Error('لا توجد رسائل');
 
-  const systemInstruction = { parts: [{ text: sys || SYS }] };
-
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: systemInstruction,
-        contents,
-        generationConfig: { temperature: 0.85, maxOutputTokens: 4096 }
-      })
-    }
-  );
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${GROQ_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      max_tokens: 4096,
+      messages: [
+        { role: 'system', content: sys || SYS },
+        ...apiMessages
+      ]
+    })
+  });
 
   const d = await res.json();
   if (!res.ok) throw new Error(d?.error?.message || 'HTTP ' + res.status);
-  return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  return d.choices?.[0]?.message?.content || '';
 }
+
+
 
 function ar(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,115)+'px'}
 function usb(){const h=document.getElementById('mi').value.trim().length>0||pf.length>0;document.getElementById('sb').classList.toggle('on',h)}
