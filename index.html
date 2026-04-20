@@ -113,6 +113,7 @@ html,body{height:100%;font-family:'IBM Plex Sans Arabic',sans-serif;background:#
     </div>
     <button class="nb active" id="n1" onclick="sw('chat')"><span class="nb-ic">💬</span>المحادثة</button>
     <button class="nb" id="n2" onclick="sw('editor')"><span class="nb-ic">✏️</span>تعديل ملف</button>
+    <button class="nb" id="n3" onclick="sw('runner')"><span class="nb-ic">▶️</span>تشغيل كود</button>
     <div style="margin-top:6px">
       <button onclick="newChat()" style="width:100%;padding:8px;border-radius:9px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.03);color:#475569;cursor:pointer;font-family:inherit;font-size:12px;transition:all .2s" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#475569'">🔄 محادثة جديدة</button>
     </div>
@@ -141,6 +142,46 @@ html,body{height:100%;font-family:'IBM Plex Sans Arabic',sans-serif;background:#
           <button id="sb" onclick="send()">↑</button>
         </div>
         <div id="ih">يدعم: صور • PDF • نصوص • كود • CSV</div>
+      </div>
+    </div>
+
+    <!-- RUNNER -->
+    <div class="panel hidden" id="rp">
+      <div class="ph">
+        <div><div class="pt">▶️ تشغيل كود</div><div class="ps">اكتب HTML أو اسألني يكتبه — ثم اضغط Run</div></div>
+        <div style="display:flex;gap:8px">
+          <button id="run-btn" onclick="runCode()" style="padding:7px 18px;border-radius:9px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;transition:all .2s;box-shadow:0 3px 10px rgba(34,197,94,0.3)" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">▶ Run</button>
+          <button onclick="clearRunner()" style="padding:7px 14px;border-radius:9px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#64748b;cursor:pointer;font-size:12px;font-family:inherit;transition:all .2s" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">مسح</button>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;overflow:hidden;gap:0">
+        <!-- Code editor side -->
+        <div style="width:50%;display:flex;flex-direction:column;border-left:1px solid rgba(255,255,255,0.05)">
+          <div style="padding:8px 14px;font-size:11px;color:#475569;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between">
+            <span>📝 الكود</span>
+            <div style="display:flex;gap:6px">
+              <button onclick="askAiCode()" id="ai-code-btn" style="padding:3px 10px;border-radius:6px;border:none;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;cursor:pointer;font-size:11px;font-family:inherit">✦ اطلب من AI</button>
+              <input type="file" id="code-file-input" accept=".html,.htm,.js,.css,.txt" style="display:none" onchange="loadCodeFile(this)"/>
+              <button onclick="document.getElementById('code-file-input').click()" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(99,102,241,0.25);background:transparent;color:#818cf8;cursor:pointer;font-size:11px;font-family:inherit">📂 فتح</button>
+            </div>
+          </div>
+          <textarea id="code-editor" placeholder="اكتب HTML هنا أو اضغط «اطلب من AI»..." style="flex:1;width:100%;background:#0a0818;border:none;color:#e2e8f0;font-family:'Courier New',monospace;font-size:12.5px;line-height:1.7;padding:14px;resize:none;direction:ltr;text-align:left;outline:none;overflow-y:auto"></textarea>
+          <!-- AI request bar -->
+          <div id="ai-req-bar" style="display:none;padding:8px;border-top:1px solid rgba(255,255,255,0.05);background:rgba(0,0,0,0.2)">
+            <div style="display:flex;gap:7px;align-items:center;background:rgba(255,255,255,0.04);border:1px solid rgba(99,102,241,0.25);border-radius:10px;padding:6px 10px">
+              <button onclick="sendAiCode()" style="padding:5px 12px;border-radius:7px;border:none;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;cursor:pointer;font-size:12px;font-family:inherit;white-space:nowrap">✦ أنشئ</button>
+              <input type="text" id="ai-code-input" placeholder="صف ما تريد... مثال: صفحة حاسبة بسيطة" style="flex:1;background:transparent;border:none;color:#f1f5f9;font-size:13px;font-family:inherit;outline:none;direction:rtl;text-align:right" onkeydown="if(event.key==='Enter')sendAiCode()"/>
+            </div>
+          </div>
+        </div>
+        <!-- Preview side -->
+        <div style="width:50%;display:flex;flex-direction:column">
+          <div style="padding:8px 14px;font-size:11px;color:#475569;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:space-between">
+            <span>👁️ المعاينة</span>
+            <button onclick="downloadCode()" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(74,222,128,0.22);background:rgba(74,222,128,0.06);color:#4ade80;cursor:pointer;font-size:11px;font-family:inherit">⬇️ تحميل</button>
+          </div>
+          <iframe id="preview-frame" style="flex:1;border:none;background:#fff" sandbox="allow-scripts allow-same-origin allow-forms allow-modals"></iframe>
+        </div>
       </div>
     </div>
 
@@ -404,6 +445,67 @@ function dl(){
   if(edf.kind==='image'){const bin=atob(edf.cur);const ba=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)ba[i]=bin.charCodeAt(i);blob=new Blob([ba],{type:edf.mimeType})}
   else blob=new Blob([edf.cur],{type:'text/plain;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='edited-'+edf.name;a.click();URL.revokeObjectURL(a.href);
+}
+
+function runCode() {
+  const code = document.getElementById('code-editor').value;
+  if (!code.trim()) return;
+  const frame = document.getElementById('preview-frame');
+  frame.srcdoc = code;
+}
+
+function clearRunner() {
+  document.getElementById('code-editor').value = '';
+  document.getElementById('preview-frame').srcdoc = '';
+}
+
+function loadCodeFile(inp) {
+  const file = inp.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => { document.getElementById('code-editor').value = r.result; runCode(); };
+  r.readAsText(file);
+  inp.value = '';
+}
+
+function downloadCode() {
+  const code = document.getElementById('code-editor').value;
+  if (!code.trim()) return;
+  const blob = new Blob([code], {type:'text/html;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'code.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function askAiCode() {
+  const bar = document.getElementById('ai-req-bar');
+  bar.style.display = bar.style.display === 'none' ? 'block' : 'none';
+  if (bar.style.display === 'block') document.getElementById('ai-code-input').focus();
+}
+
+async function sendAiCode() {
+  const prompt = document.getElementById('ai-code-input').value.trim();
+  if (!prompt) return;
+  const btn = document.getElementById('ai-code-btn');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    const reply = await ask(
+      [{role:'user', content: prompt + ' — أعطني كود HTML كامل جاهز للتشغيل فقط بدون شرح.'}],
+      'You are an expert web developer. When asked, return ONLY complete ready-to-run HTML code with no explanation, no markdown fences, just raw HTML.'
+    );
+    const clean = reply.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '').trim();
+    document.getElementById('code-editor').value = clean;
+    document.getElementById('ai-code-input').value = '';
+    document.getElementById('ai-req-bar').style.display = 'none';
+    runCode();
+  } catch(e) {
+    alert('❌ ' + e.message);
+  }
+  btn.textContent = '✦ اطلب من AI';
+  btn.disabled = false;
 }
 
 function showKeyModal() {
