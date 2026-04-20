@@ -268,7 +268,11 @@ async function ask(messages,sys){
     body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:2048,system:sys||SYS,messages:api})
   });
   const d=await res.json();
-  if(!res.ok)throw new Error(d?.error?.message||'HTTP '+res.status);
+  if(!res.ok){
+    console.error('API ERROR:', JSON.stringify(d));
+    console.error('PAYLOAD:', JSON.stringify({model:'claude-sonnet-4-5',messages:api,system:sys||SYS}));
+    throw new Error(d?.error?.message||'HTTP '+res.status);
+  }
   return d.content?.[0]?.text||'';
 }
 
