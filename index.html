@@ -247,7 +247,13 @@ async function ask(messages, sys) {
           const mt = (f.mimeType||'').startsWith('image/') ? f.mimeType : 'image/jpeg';
           parts.push({ type:'image_url', image_url:{ url:`data:${mt};base64,${f.data}` } });
         } else {
-          parts.push({ type:'text', text:`[ملف: ${f.name}]\n${f.tc||''}` });
+          // قصّ الملفات الكبيرة
+          const maxChars = 20000;
+          const txt = f.tc || '';
+          const truncated = txt.length > maxChars
+            ? txt.slice(0, maxChars) + '\n\n[... تم اقتصار الملف — الحجم كبير جداً ...]'
+            : txt;
+          parts.push({ type:'text', text:`[ملف: ${f.name}]\n${truncated}` });
         }
       }
       if (m.content) parts.push({ type:'text', text: m.content });
@@ -380,7 +386,8 @@ async function ef(){
       document.getElementById('dbtx').textContent='✅ تم — يمكنك تحميل النتيجة';document.getElementById('dlb').classList.remove('hidden');
     } else {
       const cur=document.getElementById('te').value;
-      reply=await ask([{role:'user',content:`الملف "${edf.name}":\n\`\`\`\n${cur}\n\`\`\`\nالتعليمة: ${inst}\nأعطني المحتوى المعدل فقط بدون شرح.`}],'You are a file editor. Return ONLY the edited content, no markdown fences, no explanations.');
+      const curT=cur.length>20000?cur.slice(0,20000)+'\n[مقتصر...]':cur;
+      reply=await ask([{role:'user',content:`الملف "${edf.name}":\n\`\`\`\n${curT}\n\`\`\`\nالتعليمة: ${inst}\nأعطني المحتوى المعدل فقط بدون شرح.`}],'You are a file editor. Return ONLY the edited content, no markdown fences, no explanations.');
       reply=reply.replace(/^```[\w]*\n?/,'').replace(/\n?```$/,'').trim();
       document.getElementById('te').value=reply;edf.cur=reply;
       document.getElementById('dbtx').textContent='✅ تم التعديل — راجعه وحمّله';document.getElementById('dlb').classList.remove('hidden');
