@@ -360,16 +360,103 @@ function rp(i){pf.splice(i,1);rpf();usb()}
 
 function newChat(){hist=[];document.getElementById('msgs').innerHTML=`<div class="mw"><div class="av ai">✦</div><div class="bbl ai">محادثة جديدة — كيف يمكنني مساعدتك؟</div></div>`;serr('')}
 
+function renderContent(content, isUser) {
+  const container = document.createElement('div');
+  container.style.cssText = 'display:flex;flex-direction:column;gap:10px;max-width:74%;align-items:'+(isUser?'flex-end':'flex-start');
+
+  if (isUser) {
+    const b = document.createElement('div');
+    b.className = 'bbl us';
+    b.textContent = content;
+    container.appendChild(b);
+    return container;
+  }
+
+  // Split by code blocks
+  const parts = content.split(/(```[\w]*\n[\s\S]*?```)/g);
+  parts.forEach(part => {
+    const codeMatch = part.match(/^```(\w*)\n([\s\S]*?)```$/);
+    if (codeMatch) {
+      const lang = codeMatch[1] || 'code';
+      const code = codeMatch[2];
+      const isHTML = lang === 'html' || lang === 'htm' || code.trim().startsWith('<!') || code.trim().startsWith('<html') || code.includes('<body') || code.includes('<div');
+
+      const block = document.createElement('div');
+      block.style.cssText = 'background:#0d0b1e;border:1px solid rgba(99,102,241,0.25);border-radius:12px;overflow:hidden;width:100%';
+
+      // Header
+      const hdr = document.createElement('div');
+      hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:rgba(99,102,241,0.1);border-bottom:1px solid rgba(99,102,241,0.15)';
+      
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'font-size:11px;color:#818cf8;font-family:monospace';
+      lbl.textContent = lang || 'code';
+      hdr.appendChild(lbl);
+
+      const btns = document.createElement('div');
+      btns.style.cssText = 'display:flex;gap:6px';
+
+      // Copy button
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = '📋 نسخ';
+      copyBtn.style.cssText = 'padding:3px 10px;border-radius:6px;border:1px solid rgba(99,102,241,0.3);background:transparent;color:#818cf8;cursor:pointer;font-size:11px;font-family:inherit;transition:all .2s';
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(code);
+        copyBtn.textContent = '✅ تم';
+        setTimeout(() => copyBtn.textContent = '📋 نسخ', 1500);
+      };
+      btns.appendChild(copyBtn);
+
+      // Run button (only for HTML)
+      if (isHTML) {
+        const runBtn = document.createElement('button');
+        runBtn.textContent = '▶ Run';
+        runBtn.style.cssText = 'padding:3px 12px;border-radius:6px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;cursor:pointer;font-size:11px;font-family:inherit;font-weight:600;box-shadow:0 2px 6px rgba(34,197,94,0.3);transition:all .2s';
+        runBtn.onclick = () => {
+          // Open in new tab
+          const win = window.open('', '_blank');
+          win.document.write(code);
+          win.document.close();
+        };
+        btns.appendChild(runBtn);
+      }
+
+      hdr.appendChild(btns);
+      block.appendChild(hdr);
+
+      // Code content
+      const pre = document.createElement('pre');
+      pre.style.cssText = 'margin:0;padding:14px;overflow-x:auto;font-family:"Courier New",monospace;font-size:12px;line-height:1.7;color:#e2e8f0;direction:ltr;text-align:left;max-height:320px;overflow-y:auto';
+      pre.style.scrollbarWidth = 'thin';
+      const code_el = document.createElement('code');
+      code_el.textContent = code;
+      pre.appendChild(code_el);
+      block.appendChild(pre);
+      container.appendChild(block);
+
+    } else if (part.trim()) {
+      const b = document.createElement('div');
+      b.className = 'bbl ai';
+      b.textContent = part.trim();
+      container.appendChild(b);
+    }
+  });
+  return container;
+}
+
 function am(role,content,files){
   const w=document.createElement('div');w.className='mw'+(role==='user'?' u':'');
   const av=document.createElement('div');av.className='av '+(role==='user'?'us':'ai');av.textContent=role==='user'?'👤':'✦';
-  const inn=document.createElement('div');inn.style.cssText='display:flex;flex-direction:column;gap:5px;max-width:74%;align-items:'+(role==='user'?'flex-end':'flex-start');
+  const inn=document.createElement('div');inn.style.cssText='display:flex;flex-direction:column;gap:5px;max-width:80%;align-items:'+(role==='user'?'flex-end':'flex-start');
   if(files&&files.length){
     const fw=document.createElement('div');fw.className='mfiles';
     files.forEach(f=>{if(f.kind==='image'){const img=document.createElement('img');img.src=`data:${f.mimeType};base64,${f.data}`;fw.appendChild(img)}else{const c=document.createElement('div');c.className='fchip';c.innerHTML=`<span>${fi(f.kind)}</span><span class="fn">${f.name}</span>`;fw.appendChild(c)}});
     inn.appendChild(fw);
   }
-  if(content){const b=document.createElement('div');b.className='bbl '+(role==='user'?'us':'ai');b.textContent=content;inn.appendChild(b)}
+  if(content){
+    const rendered = renderContent(content, role==='user');
+    inn.appendChild(rendered);
+  }
   if(role==='user'){w.appendChild(inn);w.appendChild(av)}else{w.appendChild(av);w.appendChild(inn)}
   document.getElementById('msgs').appendChild(w);
   w.scrollIntoView({behavior:'smooth',block:'end'});
